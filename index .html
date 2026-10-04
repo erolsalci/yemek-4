@@ -1,0 +1,1643 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Yemek Menüsü Hazırlama</title>
+<style>
+  :root{
+    --paper:#f3efe3; --paper-card:#fffdf8; --ink:#2b2420; --ink-soft:#6b6255; --border:#ddd3bd;
+    --wine:#7a2e26; --wine-dark:#5c211b; --olive:#5c6b3f; --gold:#c99a3e; --blue:#3f5a72; --warn:#e08a2b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper); color:var(--ink); font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px); min-height:100%;
+  }
+  header{ background:linear-gradient(135deg,var(--wine),var(--wine-dark)); color:#fdf6ec; padding:1.8rem 1.5rem 1.3rem; text-align:center; }
+  header h1{ font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif; font-weight:700; font-size:clamp(1.4rem,4vw,2rem); margin:0 0 .3rem; }
+  header p{ margin:0; color:#e9d4c4; font-size:.9rem; }
+
+  nav.tabs{ display:flex; justify-content:center; gap:.5rem; background:var(--paper); padding:1rem 1rem .4rem; flex-wrap:wrap; }
+  nav.tabs button{
+    font-family:inherit; font-size:.9rem; font-weight:600; padding:.55rem 1.1rem; border-radius:999px;
+    border:1.5px solid var(--border); background:var(--paper-card); color:var(--ink-soft); cursor:pointer;
+  }
+  nav.tabs button.active{ background:var(--wine); border-color:var(--wine); color:#fff; }
+
+  .settings-bar{ max-width:1150px; margin:0 auto; padding:.3rem 1.2rem 0; display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; }
+  .settings-bar label{ font-size:.78rem; color:var(--ink-soft); font-weight:600; }
+  .settings-bar input[type=text]{
+    font-family:inherit; font-size:.85rem; padding:.4rem .55rem; border-radius:6px;
+    border:1px solid var(--border); background:var(--paper-card); min-width:220px;
+  }
+
+  .control-bar{ max-width:1150px; margin:0 auto; padding:0 1.2rem; display:flex; flex-wrap:wrap; gap:.6rem; align-items:flex-end; margin-top:.6rem; }
+  .control-bar.hidden{ display:none; }
+  .field{display:flex; flex-direction:column; gap:.3rem;}
+  .field label{font-size:.76rem; font-weight:600; color:var(--ink-soft);}
+  .field select{
+    font-family:inherit; font-size:.9rem; padding:.45rem .55rem; border-radius:8px;
+    border:1.5px solid var(--border); background:var(--paper-card); min-width:105px;
+  }
+  .btn{ font-family:inherit; font-weight:700; font-size:.82rem; padding:.58rem .95rem; border:none; border-radius:999px; cursor:pointer; white-space:nowrap; }
+  .btn-random{ background:var(--wine); color:#fff; } .btn-random:hover{ background:var(--wine-dark); }
+  .btn-copy{ background:#8a7449; color:#fff; } .btn-copy:hover{ background:#6f5c39; }
+  .btn-undo{ background:#8a8478; color:#fff; } .btn-undo:hover{ background:#706b5f; }
+  .btn-report{ background:var(--olive); color:#fff; } .btn-report:hover{ background:#485530; }
+  .btn-report.combined{ background:var(--blue); } .btn-report.combined:hover{ background:#2f4658; }
+  .btn-csv{ background:#3a3530; color:#fff; } .btn-csv:hover{ background:#211e1a; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .spacer{flex:1 1 auto;}
+
+  main{ max-width:1150px; margin:0 auto; padding:0 1.2rem 3rem; }
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+
+  .group-title{
+    font-family:Georgia,serif; font-size:1.05rem; font-weight:700; color:var(--ink);
+    margin:1.6rem 0 .4rem; padding-bottom:.3rem; border-bottom:2px solid var(--border);
+  }
+  .group-title:first-of-type{ margin-top:1rem; }
+  .cat-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; }
+  .import-bar{ display:flex; flex-wrap:wrap; gap:.6rem; align-items:center; margin-top:1rem; }
+  .import-msg{ font-size:.82rem; color:var(--olive); font-weight:600; }
+  .import-msg.error{ color:#a94442; }
+
+  .cat-card{ background:var(--paper-card); border:1px solid var(--border); border-radius:10px; overflow:hidden; display:flex; flex-direction:column; }
+  .cat-card h2{ margin:0; font-size:.92rem; letter-spacing:.2px; padding:.8rem 1rem; color:#fff; }
+  .cat-search{ padding:.5rem .7rem; border-bottom:1px solid var(--border); background:#faf6ea; }
+  .cat-search input{ width:100%; font-family:inherit; font-size:.82rem; padding:.35rem .5rem; border:1px solid var(--border); border-radius:6px; }
+  .cat-card ul{ list-style:none; margin:0; padding:.3rem 0; max-height:320px; overflow-y:auto; flex:1; }
+  .cat-card li{ display:flex; align-items:center; gap:.4rem; padding:.4rem 1rem; font-size:.9rem; border-bottom:1px solid #efe9d9; }
+  .cat-card li:hover{ background:#f6efdd; }
+  .cat-card li .item-name{ flex:1; cursor:pointer; }
+  .cat-card li .item-tag{ font-size:.72rem; color:var(--ink-soft); background:#efe9d9; border-radius:999px; padding:.1rem .5rem; white-space:nowrap; }
+  .cat-card li .del-btn{ border:none; background:none; color:#a94442; cursor:pointer; font-size:.95rem; line-height:1; padding:.1rem .3rem; }
+  .cat-card li .del-btn:hover{ color:#6e2a24; }
+  .cat-card li:last-child{border-bottom:none;}
+  .edit-row{ display:flex; gap:.3rem; width:100%; }
+  .edit-row input{ font-family:inherit; font-size:.85rem; padding:.2rem .35rem; border:1px solid var(--border); border-radius:4px; }
+  .edit-row input.name-in{ flex:2; } .edit-row input.tag-in{ flex:1; }
+
+  .clr-0 h2{background:var(--wine);} .clr-1 h2{background:var(--gold);} .clr-2 h2{background:var(--olive);} .clr-3 h2{background:var(--blue);}
+
+  .add-row{ display:flex; gap:.4rem; padding:.6rem .7rem; flex-wrap:wrap; border-top:1px solid var(--border); background:#faf6ea; }
+  .add-row input{ font-family:inherit; font-size:.83rem; padding:.42rem .5rem; border:1px solid var(--border); border-radius:6px; }
+  .add-row input.name-in{ flex:2; min-width:100px; } .add-row input.tag-in{ flex:1; min-width:80px; }
+  .add-row button{ font-family:inherit; font-size:.83rem; font-weight:600; padding:.42rem .65rem; border:none; border-radius:6px; background:var(--ink); color:#fff; cursor:pointer; }
+  .hint{ color:var(--ink-soft); font-size:.83rem; margin-top:.9rem; }
+
+  .table-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--paper-card); margin-top:1rem; }
+  table{ border-collapse:collapse; width:100%; min-width:640px; font-size:.85rem; }
+  thead th{ position:sticky; top:0; background:#3d3a34; color:#fff; padding:.55rem .5rem; font-weight:600; text-align:center; white-space:nowrap; }
+  thead th.hcol-kahvalti{ background:#b5762c; }
+  thead th.hcol-ogle{ background:#5b83a6; }
+  thead th.hcol-araogun{ background:#4f7a63; }
+  thead th.hcol-aksam{ background:#28425c; }
+  tbody td{ padding:.32rem .4rem; border-bottom:1px solid #efe9d9; text-align:center; }
+  tbody tr:nth-child(even){background:#faf6ea;}
+  td.date-cell{font-weight:600; white-space:nowrap;} td.day-cell{color:var(--ink-soft); white-space:nowrap;}
+  select.pick{ font-family:inherit; font-size:.8rem; padding:.28rem; border-radius:6px; border:1px solid var(--border); background:#fff; width:100%; min-width:125px; }
+  select.pick.repeat-warn{ border:2px solid var(--warn); background:#fff6ea; }
+  .copy-btn{ font-family:inherit; font-size:.78rem; font-weight:600; padding:.32rem .55rem; border-radius:6px; border:1px solid var(--border); background:#fff; color:var(--ink-soft); cursor:pointer; white-space:nowrap; }
+  .copy-btn:hover{ background:#f6efdd; }
+  .copy-btn.copied{ background:var(--olive); color:#fff; border-color:var(--olive); }
+
+  @media (max-width:680px){
+    table.responsive thead{ display:none; }
+    table.responsive, table.responsive tbody, table.responsive tr, table.responsive td{ display:block; width:100%; }
+    table.responsive tr{ border:1px solid var(--border); border-radius:8px; margin-bottom:.6rem; padding:.4rem .5rem; }
+    table.responsive td{ text-align:left; padding:.3rem 0; border-bottom:none; display:flex; gap:.5rem; align-items:center; }
+    table.responsive td::before{ content:attr(data-label); font-weight:700; font-size:.72rem; color:var(--ink-soft); width:90px; flex:none; }
+  }
+  footer{ text-align:center; color:var(--ink-soft); font-size:.78rem; padding:1.5rem 1rem 2.5rem; }
+
+  .modal-backdrop{ display:none; position:fixed; inset:0; background:rgba(43,36,32,.55); align-items:center; justify-content:center; z-index:50; padding:1rem; }
+  .modal{ background:var(--paper-card); border-radius:14px; padding:1.4rem 1.5rem; width:min(380px,100%); text-align:center; box-shadow:0 10px 40px rgba(0,0,0,.3); }
+  .modal.wide{ width:min(520px,100%); text-align:left; max-height:88vh; overflow-y:auto; }
+  .modal h3{ margin:0 0 .3rem; font-family:Georgia,serif; }
+  .modal p{ margin:0 0 1rem; color:var(--ink-soft); font-size:.85rem; }
+  .modal-actions{ display:flex; flex-direction:column; gap:.5rem; margin-bottom:.8rem; }
+  .strategy-list{ display:flex; flex-direction:column; gap:.5rem; margin-bottom:.4rem; }
+  .strategy-opt{
+    display:flex; gap:.6rem; align-items:flex-start; padding:.6rem .7rem;
+    border:1.5px solid var(--border); border-radius:10px; cursor:pointer; background:#faf6ea;
+  }
+  .strategy-opt:has(input:checked){ border-color:#4f7a63; background:#eef4ee; }
+  .strategy-opt input{ margin-top:.2rem; }
+  .strategy-opt small{ color:var(--ink-soft); font-size:.78rem; }
+  #customTagInput{ font-family:inherit; padding:.45rem; border-radius:8px; border:1.5px solid var(--border); }
+  .modal p.dlg-msg{ color:var(--ink); font-size:.92rem; white-space:pre-line; }
+  .modal input.dlg-input{ width:100%; font-family:inherit; font-size:.95rem; padding:.5rem .6rem; border:1.5px solid var(--border); border-radius:8px; margin-bottom:1rem; background:#fff; color:var(--ink); }
+  .dlg-row{ display:flex; gap:.5rem; justify-content:center; flex-wrap:wrap; }
+  .sync-status{ font-size:.78rem; font-weight:600; padding:.3rem .7rem; border-radius:999px; background:#e7ecdf; color:var(--olive); white-space:nowrap; }
+  .sync-status.busy{ background:#f4ead2; color:#8a6a1f; }
+  .sync-status.warn{ background:#f6e0dc; color:#a94442; white-space:normal; }
+  .perm-banner{ max-width:1150px; margin:.8rem auto 0; padding:.8rem 1rem; border-radius:10px; background:#f6e0dc; color:#6e2a24; border:1px solid #e3b9b2; font-size:.88rem; line-height:1.45; }
+  .perm-banner b{ display:block; margin-bottom:.2rem; }
+  .btn:focus-visible, nav.tabs button:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Yemek Menüsü Hazırlama</h1>
+  <p>Yemek listesi ve günlük 4 öğünlük menü planlama aracı</p>
+</header>
+
+<div class="perm-banner" id="permBanner" hidden role="alert">
+  <b>Bu hesapla yalnızca görüntüleme izniniz var; yaptığınız değişiklikler buluta kaydedilmiyor.</b>
+  Sayfa sahibi Paylaş menüsünden bu hesabı <b style="display:inline">Düzenleyici</b> olarak eklemeli. Sayfa aynı zamanda herkese açık linkle paylaşılıyorsa link kapatılmalı; link açıkken dışarıdan e-postayla davet edilen hesaplar düzenleme yapamaz. Ayar değişince bu sayfayı yenileyin.
+</div>
+
+<nav class="tabs" id="tabsNav">
+  <button class="tab-btn active" data-tab="liste">📋 Yemek Listesi</button>
+</nav>
+
+<div class="settings-bar">
+  <label for="kurumInput">Kurum Adı:</label>
+  <input type="text" id="kurumInput" placeholder="Rapor başlığında görünecek kurum adı">
+  <button class="btn btn-csv" id="saveBtn">💾 Kaydet</button>
+  <span class="import-msg" id="saveMsg"></span>
+  <span class="spacer"></span>
+  <span class="sync-status busy" id="syncStatus" role="status">☁️ Buluta bağlanıyor…</span>
+</div>
+
+<div class="control-bar hidden" id="controlBar">
+  <div class="field"><label for="aySelect">Ay</label><select id="aySelect"></select></div>
+  <div class="field"><label for="yilSelect">Yıl</label><select id="yilSelect"></select></div>
+  <div class="field"><label for="variantSelect">Menü Varyantı</label>
+    <div style="display:flex; gap:.3rem;">
+      <select id="variantSelect"></select>
+      <button class="btn btn-undo" id="variantMenuBtn" title="Varyant işlemleri" style="padding:.45rem .6rem;">⚙️</button>
+    </div>
+  </div>
+  <div class="field"><label for="viewSelect">Görünüm</label>
+    <select id="viewSelect"><option value="aylik">Aylık</option><option value="haftalik">Haftalık</option></select>
+  </div>
+  <div class="field" id="weekField" style="display:none;"><label for="weekSelect">Hafta</label><select id="weekSelect"></select></div>
+  <span class="spacer"></span>
+  <button class="btn btn-random" id="fillMenuBtn">🧰 Menü Doldur</button>
+  <button class="btn btn-undo" id="undoBtn" disabled>↩️ Geri Al</button>
+  <button class="btn btn-report" id="reportBtn">📄 Rapor Al</button>
+</div>
+
+<main>
+  <section id="liste" class="panel active">
+    <div class="import-bar">
+      <button class="btn btn-csv" id="importBtn">📥 Liste İçe Aktar (CSV/JSON)</button>
+      <input type="file" id="importFile" accept=".csv,.json,.xls,.xlsx" style="display:none;">
+      <button class="btn btn-csv" id="exportListBtn">⬇️ Liste Dışa Aktar (CSV)</button>
+      <button class="btn btn-csv" id="backupBtn">💾 Tam Yedek Al (JSON)</button>
+      <span class="import-msg" id="importMsg"></span>
+    </div>
+    <div id="listeContainer"></div>
+    <p class="hint">Yemek adına tıklayıp düzenleyin, × ile silin, kutudan yeni yemek + (opsiyonel) etiket ekleyin. Her kartın üstündeki kutuyla arama yapabilirsiniz. Değişiklikler ilgili öğün sayfasına otomatik yansır.</p>
+  </section>
+
+  <div id="mealPanels"></div>
+</main>
+
+<footer>Rapor almak için "Rapor Al" butonlarını kullanın; açılan yazdırma penceresinden PDF olarak da kaydedebilirsiniz. Liste ve menüler bulutta tutulur; her cihazda aynı veriler görünür.</footer>
+
+<div class="modal-backdrop" id="reportModal">
+  <div class="modal">
+    <h3>📄 Rapor Al</h3>
+    <p>Kapsam ve biçim seçin. Her gün tek satır, tüm ay en fazla 2 sayfa.</p>
+    <div class="strategy-list" style="margin-bottom:.8rem;">
+      <label class="strategy-opt">
+        <input type="radio" name="reportScope" value="page" checked>
+        <span><b>Bu Sayfa</b><br><small id="reportScopeLabel">Açık olan öğünün menüsü</small></span>
+      </label>
+      <label class="strategy-opt">
+        <input type="radio" name="reportScope" value="birlesik">
+        <span><b>Birleşik (4 Öğün)</b><br><small>Kahvaltı, Öğle, Ara Öğün, Akşam bir arada</small></span>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-report" data-fmt="xlsx">📗 Excel (.xlsx)</button>
+      <button class="btn btn-random" data-fmt="pdf">📕 PDF</button>
+      <button class="btn btn-report combined" data-fmt="docx">📘 Word (.docx)</button>
+      <button class="btn btn-csv" data-fmt="csv">📄 CSV</button>
+    </div>
+    <button class="btn btn-undo" id="reportModalClose">Kapat</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="fillMenuModal">
+  <div class="modal">
+    <h3>🧰 Menü Doldur</h3>
+    <p>Açık olan öğün sayfası için bir doldurma yöntemi seçin.</p>
+    <div class="modal-actions">
+      <button class="btn btn-random" id="fillRandomBtn">🎲 Rastgele Menü</button>
+      <button class="btn btn-random" id="fillBalanceBtn" style="background:#4f7a63; display:none;">⚖️ Dengeli Dağıt</button>
+      <button class="btn btn-copy" id="fillPrevMonthBtn">⬅️ Geçen Ayı Kopyala</button>
+    </div>
+    <button class="btn btn-undo" id="fillMenuModalClose">Kapat</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="variantModal">
+  <div class="modal">
+    <h3>⚙️ Menü Varyantı</h3>
+    <p>Aynı ay için birden fazla menü taslağı oluşturup aralarında geçiş yapabilirsiniz.</p>
+    <div class="modal-actions">
+      <button class="btn btn-copy" id="newVariantBtn">➕ Yeni Menü Ekle</button>
+      <button class="btn btn-undo" id="delVariantBtn">🗑 Bu Varyantı Sil</button>
+    </div>
+    <button class="btn btn-undo" id="variantModalClose">Kapat</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="balanceModal">
+  <div class="modal wide">
+    <h3>⚖️ Öğle Ana Yemeğini Dengeli Dağıt</h3>
+    <p>Seçili ayın <b>hafta içi</b> (Pazartesi–Cuma) günlerine, seçtiğiniz stratejiye göre öneriler dağıtılır. Hafta sonu günlerine dokunulmaz, elle yaptığınız seçimlerin üzerine yazılır.</p>
+    <div class="strategy-list" id="strategyList">
+      <label class="strategy-opt">
+        <input type="radio" name="strategy" value="etTavuk" checked>
+        <span><b>Et ve Tavuk Dengesi</b><br><small>Ana yemekte kırmızı et, tavuk, balık ve vejetaryen seçenekleri hafta içine dengeli dağıtılır.</small></span>
+      </label>
+      <label class="strategy-opt">
+        <input type="radio" name="strategy" value="karbonhidrat">
+        <span><b>Karbonhidrat Dengesi</b><br><small>Çorba/Pilav sütununda ağır (pilav/makarna) ve hafif (çorba) günler dengelenir.</small></span>
+      </label>
+      <label class="strategy-opt">
+        <input type="radio" name="strategy" value="cesitlilik">
+        <span><b>Çeşitlilik Önceliği</b><br><small>Aynı hafta içinde ana yemek ve çorba/pilav tekrarları en aza indirilir.</small></span>
+      </label>
+      <label class="strategy-opt">
+        <input type="radio" name="strategy" value="custom">
+        <span><b>Kendi Kuralım</b><br><small>Bir etiket seçip o etiketin haftada en fazla kaç gün çıkacağını siz belirleyin.</small></span>
+      </label>
+    </div>
+    <div id="customRuleFields" style="display:none; margin:.6rem 0; display:flex; gap:.6rem; flex-wrap:wrap;">
+      <div class="field"><label for="customTagInput">Etiket</label>
+        <select id="customTagInput"></select>
+      </div>
+      <div class="field"><label for="customMaxInput">Haftada en fazla (gün)</label>
+        <input type="number" id="customMaxInput" min="0" max="5" value="2" style="width:80px; padding:.45rem; border-radius:8px; border:1.5px solid var(--border);">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-random" id="balanceApplyBtn" style="background:#4f7a63;">⚖️ Uygula</button>
+    </div>
+    <button class="btn btn-undo" id="balanceModalClose">Kapat</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="dlgBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <h3 id="dlgTitle">Onay</h3>
+    <p class="dlg-msg" id="dlgMsg"></p>
+    <input type="text" class="dlg-input" id="dlgInput">
+    <div class="dlg-row">
+      <button class="btn btn-random" id="dlgOk">Tamam</button>
+      <button class="btn btn-undo" id="dlgCancel">Vazgeç</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================== SAYFA ICI DIYALOGLAR (native confirm/prompt/alert yerine) ================== */
+const dlgBackdrop = document.getElementById("dlgBackdrop");
+const dlgTitle = document.getElementById("dlgTitle"), dlgMsg = document.getElementById("dlgMsg");
+const dlgInput = document.getElementById("dlgInput"), dlgOk = document.getElementById("dlgOk"), dlgCancel = document.getElementById("dlgCancel");
+let dlgResolve = null;
+function uiDialog({title="Onay", message="", input=false, value="", okText="Tamam", cancelText="Vazgeç"}){
+  if(dlgResolve){ dlgResolve(null); }
+  dlgTitle.textContent = title; dlgMsg.textContent = message;
+  dlgInput.hidden = !input; dlgInput.value = value;
+  dlgOk.textContent = okText;
+  dlgCancel.hidden = !cancelText; dlgCancel.textContent = cancelText || "";
+  dlgBackdrop.style.display = "flex";
+  setTimeout(()=> (input ? dlgInput : dlgOk).focus(), 30);
+  if(input) setTimeout(()=> dlgInput.select(), 40);
+  return new Promise(res=>{ dlgResolve = res; });
+}
+function closeDialog(val){ dlgBackdrop.style.display = "none"; const r = dlgResolve; dlgResolve = null; if(r) r(val); }
+dlgOk.addEventListener("click", ()=> closeDialog(dlgInput.hidden ? true : dlgInput.value));
+dlgCancel.addEventListener("click", ()=> closeDialog(null));
+dlgInput.addEventListener("keydown", e=>{ if(e.key==="Enter") dlgOk.click(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && dlgResolve) closeDialog(null); });
+dlgBackdrop.addEventListener("click", e=>{ if(e.target === dlgBackdrop) closeDialog(null); });
+function uiAlert(message, title="Bilgi"){ return uiDialog({title, message, cancelText:""}); }
+function uiConfirm(message){ return uiDialog({title:"Onay", message, okText:"Evet, sil", cancelText:"Vazgeç"}).then(v=> v!==null); }
+function uiPrompt(message, value){ return uiDialog({title:"Yeni Menü", message, input:true, value, okText:"Oluştur"}); }
+
+/* ================== DOSYA INDIRME (downloads capability varsa onu kullan) ================== */
+let downloadsApi = null;
+async function saveFile(filename, data, mime){
+  const blob = (data instanceof Blob) ? data : new Blob([data], {type: mime || "application/octet-stream"});
+  if(downloadsApi){
+    try{ await downloadsApi.save({filename, data: blob}); }
+    catch(e){
+      const code = e && e.code;
+      if(code === "declined") return;
+      if(code === "rate_limited"){ uiAlert("Önceki indirme onayı hâlâ açık. Onu kapatıp tekrar deneyin."); return; }
+      uiAlert("Dosya indirilemedi: " + ((e && e.message) || code || e));
+    }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=> URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ================== OGUN TANIMLARI ================== */
+const MEALS = [
+  {id:"kahvalti", tab:"🍳 Kahvaltı", title:"Kahvaltı", hcls:"hcol-kahvalti",
+   cats:["Peynir Çeşitleri","Zeytin","Yumurta","Sebze","Bal / Reçel","Tereyağı / Çikolata Kreması","Ekmek Çeşitleri","İçecek (Kahvaltı)"],
+   labels:["Peynir Çeşitleri","Zeytin","Yumurta","Sebze","Bal/Reçel","Tereyağı/Krema","Ekmek Çeşitleri","İçecek"]},
+  {id:"ogle", tab:"🍽️ Öğle Menüsü", title:"Öğle Menüsü", hcls:"hcol-ogle",
+   cats:["Ana Yemek","Çorba / Pilav","Salata / Ara Lezzetler","Tatlı / Meyve"],
+   labels:["Ana Yemek","Çorba/Pilav","Ara/Salata","Tatlı/Meyve"]},
+  {id:"araogun", tab:"🥪 Ara Öğün", title:"Ara Öğün", hcls:"hcol-araogun",
+   cats:["Atıştırmalık","İçecek (Ara Öğün)"],
+   labels:["Atıştırmalık","İçecek"]},
+  {id:"aksam", tab:"🌙 Akşam Menüsü", title:"Akşam Menüsü", hcls:"hcol-aksam",
+   cats:["Ana Yemek","Çorba / Pilav","Salata / Ara Lezzetler","Tatlı / Meyve"],
+   labels:["Ana Yemek","Çorba/Pilav","Ara/Salata","Tatlı/Meyve"]},
+];
+const LIST_GROUPS = [
+  {title:"🍳 Kahvaltı Kategorileri", keys:MEALS[0].cats},
+  {title:"🍽️ Öğle & Akşam Ortak Kategoriler", keys:MEALS[1].cats},
+  {title:"🥪 Ara Öğün Kategorileri", keys:MEALS[2].cats},
+];
+const ALL_CAT_KEYS = [...new Set(MEALS.flatMap(m=>m.cats))];
+
+const AYLAR = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const GUNLER = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+
+/* ================== VERI ================== */
+const DEFAULT_CATS_RAW = {"Ana Yemek": [{"name": "Alabalık", "tag": "Balık"}, {"name": "Antep Ezme", "tag": "Kırmızı Et"}, {"name": "Balık", "tag": "Balık"}, {"name": "Ciğer Kavurma", "tag": "Kırmızı Et"}, {"name": "Döner", "tag": "Kırmızı Et"}, {"name": "Et Kavurma", "tag": "Kırmızı Et"}, {"name": "Et Sote", "tag": "Kırmızı Et"}, {"name": "Etli Bezelye", "tag": "Kırmızı Et"}, {"name": "Etli Kuru Fasulye", "tag": "Kırmızı Et"}, {"name": "Etli Nohut Yemeği", "tag": "Kırmızı Et"}, {"name": "Etli Patates Yemeği", "tag": "Kırmızı Et"}, {"name": "Etli Pide", "tag": "Kırmızı Et"}, {"name": "Etli Sulu Patates Yemeği", "tag": "Kırmızı Et"}, {"name": "Etli Taze Fasulye", "tag": "Kırmızı Et"}, {"name": "Etli Türlü", "tag": "Kırmızı Et"}, {"name": "Fırında Kanat", "tag": "Tavuk"}, {"name": "Fırında Tavuk", "tag": "Tavuk"}, {"name": "Fırında Tavuk Pirzola", "tag": "Tavuk"}, {"name": "Fırında Tavuk Şiş", "tag": "Tavuk"}, {"name": "Hamburger", "tag": "Kırmızı Et"}, {"name": "Hasanpaşa Köfte", "tag": "Kırmızı Et"}, {"name": "Kadınbudu Köfte", "tag": "Kırmızı Et"}, {"name": "Kalem Böreği", "tag": "Vejetaryen"}, {"name": "Kanat", "tag": "Tavuk"}, {"name": "Karnabahar Kızartma", "tag": "Vejetaryen"}, {"name": "Karnabahar Yemeği", "tag": "Vejetaryen"}, {"name": "Karnıyarık", "tag": "Kırmızı Et"}, {"name": "Karışık Kızartma", "tag": "Kırmızı Et"}, {"name": "Kasap Köfte", "tag": "Kırmızı Et"}, {"name": "Kağıt Kebabı", "tag": "Kırmızı Et"}, {"name": "Kuru Fasulye", "tag": "Vejetaryen"}, {"name": "Kuru Köfte", "tag": "Kırmızı Et"}, {"name": "Kuru Nohut", "tag": "Vejetaryen"}, {"name": "Kuşbaşılı Pide", "tag": "Kırmızı Et"}, {"name": "Köfte", "tag": "Kırmızı Et"}, {"name": "Kısır", "tag": "Vejetaryen"}, {"name": "Kıymalı Makarna", "tag": "Kırmızı Et"}, {"name": "Kıymalı Pide", "tag": "Kırmızı Et"}, {"name": "Kıymalı Sote", "tag": "Kırmızı Et"}, {"name": "Kıymalı Tepsi Böreği", "tag": "Kırmızı Et"}, {"name": "Kıymalı Yumurta", "tag": "Kırmızı Et"}, {"name": "Lahmacun", "tag": "Kırmızı Et"}, {"name": "Mantı", "tag": "Kırmızı Et"}, {"name": "Menemen", "tag": "Vejetaryen"}, {"name": "Musakka", "tag": "Kırmızı Et"}, {"name": "Nohut Yemeği", "tag": "Vejetaryen"}, {"name": "Omlet Tava", "tag": "Vejetaryen"}, {"name": "Orman Kebabı", "tag": "Kırmızı Et"}, {"name": "Palamut Balığı", "tag": "Balık"}, {"name": "Parmak Kebabı", "tag": "Kırmızı Et"}, {"name": "Patates Oturtma", "tag": "Kırmızı Et"}, {"name": "Pide", "tag": "Kırmızı Et"}, {"name": "Pilavlı Nohut", "tag": "Vejetaryen"}, {"name": "Pirzola", "tag": "Tavuk"}, {"name": "Sebzeli Kebap", "tag": "Kırmızı Et"}, {"name": "Sebzeli Köfte", "tag": "Kırmızı Et"}, {"name": "Siirt Biber Dolması", "tag": "Kırmızı Et"}, {"name": "Siirt Dolması", "tag": "Kırmızı Et"}, {"name": "Sulu Patates Yemeği", "tag": "Vejetaryen"}, {"name": "Tavuk", "tag": "Tavuk"}, {"name": "Tavuk Baget", "tag": "Tavuk"}, {"name": "Tavuk Döner", "tag": "Tavuk"}, {"name": "Tavuk Göğüs", "tag": "Tavuk"}, {"name": "Tavuk Haşlama", "tag": "Tavuk"}, {"name": "Tavuk Kanat", "tag": "Tavuk"}, {"name": "Tavuk Kavurma", "tag": "Tavuk"}, {"name": "Tavuk Kırıntı", "tag": "Tavuk"}, {"name": "Tavuk Pirzola", "tag": "Tavuk"}, {"name": "Tavuk Sote", "tag": "Tavuk"}, {"name": "Taze Fasulye", "tag": "Vejetaryen"}, {"name": "Tiftikli Tavuk", "tag": "Tavuk"}, {"name": "Türlü", "tag": "Vejetaryen"}, {"name": "Yoğurtlu Karışık Kızartma", "tag": "Kırmızı Et"}, {"name": "Çerkez Tavuğu", "tag": "Tavuk"}, {"name": "Çiğ Köfte", "tag": "Kırmızı Et"}, {"name": "Çıtır Göğüs Tavuk", "tag": "Tavuk"}, {"name": "Çıtır Tavuk", "tag": "Tavuk"}, {"name": "İnegöl Köfte", "tag": "Kırmızı Et"}, {"name": "İzmir Köfte", "tag": "Kırmızı Et"}, {"name": "İçli Köfte", "tag": "Kırmızı Et"}, {"name": "Şnitzel", "tag": "Kırmızı Et"}], "Çorba / Pilav": ["Arpa Çorbası", "Arpa Şehriyeli Çorba", "Bulgur Pilavı", "Ezogelin Çorbası", "Makarna", "Makarna Pilavı", "Mercimek Çorbası", "Meyhane Pilavı", "Nohutlu Pirinç Pilavı", "Pirinç Pilavı", "Spagetti", "Tel Şehriye Çorbası", "Yayla Çorbası", "Özbek Pilavı", "Şehriye Çorbası", "Şehriyeli Arpa Çorbası"], "Salata / Ara Lezzetler": ["Ayran", "Bal", "Beyaz Peynir", "Cacık", "Kaşar Peyniri", "Patates Cipsi", "Patates Kızartması", "Reçel", "Salata", "Soğan Salatası", "Tereyağı", "Turşu", "Yoğurt", "Yumurta", "Zeytin", "Çay", "Üçgen Peynir"], "Tatlı / Meyve": ["Armut", "Baklava", "Ekler", "Elma", "Erik", "Fıstıklı Baklava", "Halka Tatlısı", "Hurma", "Karpuz", "Kavun", "Kayısı", "Mandalina", "Muz", "Nar", "Nektarin", "Portakal", "Puding Tatlısı", "Revani", "Sütlaç", "Tulumba Tatlısı", "Çikolata", "Çilek", "Üzüm", "Şeftali"], "Peynir Çeşitleri": ["Beyaz Peynir", "Kaşar Peyniri", "Üçgen Peynir", "Labne"], "Zeytin": ["Siyah Zeytin", "Yeşil Zeytin"], "Yumurta": ["Yumurta", "Omlet"], "Sebze": ["Domates", "Salatalık", "Söğüş"], "Bal / Reçel": ["Bal", "Reçel"], "Tereyağı / Çikolata Kreması": ["Tereyağı", "Çikolata Kreması"], "Ekmek Çeşitleri": ["Açma", "Poğaça", "Simit", "Peynirli Poğaça", "Kalem Böreği", "Patates Kızartması"], "İçecek (Kahvaltı)": ["Çay", "Süt", "Meyve Suyu"], "Atıştırmalık": ["Kek", "Dokuz Kat Gofret", "Kat Kat Gofret", "Çikolatalı Gofret", "Hoşbeş Gofreti", "Poğaça", "Açma", "Kuru Üzüm", "Kuruyemiş"], "İçecek (Ara Öğün)": ["Çay", "Kahve", "Neskafe", "Hazır Kahve", "Süt", "Kakaolu Süt", "Çikolatalı Süt", "Meyveli Süt", "Meyve Suyu"]};
+
+function toObjItems(arr){ return (arr||[]).map(x => (typeof x === "string") ? {name:x, tag:""} : {name:x.name, tag:x.tag||""}); }
+function normalizeCats(raw){ const out = {}; ALL_CAT_KEYS.forEach(k=>{ out[k] = toObjItems(raw[k] || []); }); return out; }
+
+let cats = loadCats();
+let menuStore = loadMenuStore();
+let kurumAdi = "";
+try{ kurumAdi = localStorage.getItem("yemekKurumAdi") || ""; }catch(e){}
+
+function loadCats(){
+  try{
+    const raw = localStorage.getItem("yemekListesiCatsV4");
+    if(raw){ const parsed = JSON.parse(raw); if(parsed) return normalizeCats(parsed); }
+  }catch(e){}
+  return normalizeCats(DEFAULT_CATS_RAW);
+}
+function saveCats(){ try{ localStorage.setItem("yemekListesiCatsV4", JSON.stringify(cats)); }catch(e){} scheduleSync(); }
+
+function loadMenuStore(){
+  try{ const raw = localStorage.getItem("yemekMenuStore"); if(raw) return JSON.parse(raw); }catch(e){}
+  return {};
+}
+function saveMenuStore(){ try{ localStorage.setItem("yemekMenuStore", JSON.stringify(menuStore)); }catch(e){} scheduleSync(); }
+
+function namesOf(catKey){ return cats[catKey].map(i=>i.name); }
+
+/* ================== UNDO ================== */
+let undoStack = [];
+const undoBtn = document.getElementById("undoBtn");
+function snapshot(){
+  undoStack.push(JSON.stringify({cats, menuStore}));
+  if(undoStack.length > 20) undoStack.shift();
+  undoBtn.disabled = false;
+}
+function undo(){
+  if(!undoStack.length) return;
+  const snap = JSON.parse(undoStack.pop());
+  cats = snap.cats; menuStore = snap.menuStore;
+  saveCats(); saveMenuStore();
+  renderCats(); rebuildAll();
+  undoBtn.disabled = undoStack.length === 0;
+}
+undoBtn.addEventListener("click", undo);
+
+/* ================== KURUM ADI / KAYDET ================== */
+const kurumInput = document.getElementById("kurumInput");
+kurumInput.value = kurumAdi;
+kurumInput.addEventListener("input", ()=>{
+  kurumAdi = kurumInput.value;
+  try{ localStorage.setItem("yemekKurumAdi", kurumAdi); }catch(e){}
+  scheduleSync();
+});
+const saveBtn = document.getElementById("saveBtn");
+const saveMsg = document.getElementById("saveMsg");
+saveBtn.addEventListener("click", ()=>{
+  saveCats(); saveMenuStore(); saveVariantStore();
+  saveBtn.textContent = "✓ Kaydedildi";
+  saveMsg.textContent = "Tüm liste ve menü değişiklikleri kaydedildi.";
+  setTimeout(()=>{ saveBtn.textContent = "💾 Kaydet"; saveMsg.textContent = ""; }, 1800);
+});
+
+/* ================== SEKME (TAB) OLUSTURMA ================== */
+const tabsNav = document.getElementById("tabsNav");
+const mealPanels = document.getElementById("mealPanels");
+MEALS.forEach(meal=>{
+  const btn = document.createElement("button");
+  btn.className = "tab-btn"; btn.dataset.tab = meal.id; btn.textContent = meal.tab;
+  tabsNav.appendChild(btn);
+
+  const section = document.createElement("section");
+  section.className = "panel"; section.id = meal.id;
+  const headerCells = meal.labels.map(lbl => `<th class="${meal.hcls}">${lbl}</th>`).join("");
+  section.innerHTML = `
+    <div class="table-wrap">
+      <table id="${meal.id}Table" class="responsive">
+        <thead><tr>
+          <th>Tarih</th><th>Gün</th>
+          ${headerCells}
+          <th></th>
+        </tr></thead>
+        <tbody id="${meal.id}Body"></tbody>
+      </table>
+    </div>
+    <p class="hint">Turuncu çerçeveli hücreler, o ürünün son 7 gün içinde tekrar ettiğini gösterir.</p>`;
+  mealPanels.appendChild(section);
+});
+
+const controlBar = document.getElementById("controlBar");
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab).classList.add("active");
+    controlBar.classList.toggle("hidden", btn.dataset.tab === "liste");
+  });
+});
+function activeMealTab(){
+  const active = document.querySelector(".tab-btn.active");
+  return active ? active.dataset.tab : MEALS[0].id;
+}
+function mealById(id){ return MEALS.find(m=>m.id===id) || MEALS[0]; }
+
+/* ================== SAYFA: LISTE (grup basliklariyla) ================== */
+const listeContainer = document.getElementById("listeContainer");
+
+function renderCats(){
+  listeContainer.innerHTML = "";
+  LIST_GROUPS.forEach(group=>{
+    const h = document.createElement("div");
+    h.className = "group-title"; h.textContent = group.title;
+    listeContainer.appendChild(h);
+
+    const grid = document.createElement("div");
+    grid.className = "cat-grid";
+    group.keys.forEach((catKey, idx)=>{
+      grid.appendChild(buildCatCard(catKey, idx % 4));
+    });
+    listeContainer.appendChild(grid);
+  });
+}
+
+function buildCatCard(catKey, colorIdx){
+  const items = cats[catKey] || [];
+  const card = document.createElement("div");
+  card.className = "cat-card clr-" + colorIdx;
+
+  const h2 = document.createElement("h2");
+  h2.textContent = catKey.toUpperCase() + " (" + items.length + ")";
+  card.appendChild(h2);
+
+  const searchWrap = document.createElement("div");
+  searchWrap.className = "cat-search";
+  const searchInput = document.createElement("input");
+  searchInput.type = "text"; searchInput.placeholder = "Ara...";
+  searchWrap.appendChild(searchInput);
+  card.appendChild(searchWrap);
+
+  const ul = document.createElement("ul");
+  card.appendChild(ul);
+
+  function drawItems(filterText){
+    ul.innerHTML = "";
+    const ft = (filterText||"").toLocaleLowerCase("tr");
+    items.slice().sort((a,b)=>a.name.localeCompare(b.name,"tr")).forEach(item=>{
+      if(ft && !item.name.toLocaleLowerCase("tr").includes(ft)) return;
+      const li = document.createElement("li");
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "item-name"; nameSpan.textContent = item.name;
+      nameSpan.title = "Düzenlemek için tıklayın";
+      nameSpan.addEventListener("click", ()=> startEdit(li, catKey, item, drawItems, searchInput));
+      li.appendChild(nameSpan);
+      if(item.tag){
+        const tagSpan = document.createElement("span");
+        tagSpan.className = "item-tag"; tagSpan.textContent = item.tag;
+        li.appendChild(tagSpan);
+      }
+      const delBtn = document.createElement("button");
+      delBtn.className = "del-btn"; delBtn.textContent = "×"; delBtn.title = "Sil";
+      delBtn.addEventListener("click", async (e)=>{
+        e.stopPropagation();
+        if(await uiConfirm(`"${item.name}" listeden silinsin mi?`)){
+          snapshot();
+          cats[catKey] = cats[catKey].filter(i=>i.name!==item.name);
+          saveCats(); renderCats();
+        }
+      });
+      li.appendChild(delBtn);
+      ul.appendChild(li);
+    });
+  }
+  drawItems("");
+  searchInput.addEventListener("input", ()=> drawItems(searchInput.value));
+
+  const addRow = document.createElement("div");
+  addRow.className = "add-row";
+  const nameIn = document.createElement("input");
+  nameIn.className = "name-in"; nameIn.type="text"; nameIn.placeholder="Yeni ürün adı...";
+  const tagIn = document.createElement("input");
+  tagIn.className = "tag-in"; tagIn.type="text"; tagIn.placeholder="Etiket (opsiyonel)";
+  const addBtn = document.createElement("button");
+  addBtn.textContent = "Ekle";
+  addBtn.addEventListener("click", ()=>{
+    const val = nameIn.value.trim(); const tag = tagIn.value.trim();
+    if(!val) return;
+    if(!cats[catKey].some(x=>x.name.toLowerCase()===val.toLowerCase())){
+      snapshot();
+      cats[catKey].push({name:val, tag:tag});
+      saveCats(); renderCats();
+    }
+    nameIn.value=""; tagIn.value="";
+  });
+  nameIn.addEventListener("keydown", e=>{ if(e.key==="Enter") addBtn.click(); });
+  tagIn.addEventListener("keydown", e=>{ if(e.key==="Enter") addBtn.click(); });
+  addRow.appendChild(nameIn); addRow.appendChild(tagIn); addRow.appendChild(addBtn);
+  card.appendChild(addRow);
+  return card;
+}
+
+function startEdit(li, catKey, item, redrawFn, searchInput){
+  const oldName = item.name, oldTag = item.tag;
+  li.innerHTML = "";
+  const wrap = document.createElement("div"); wrap.className = "edit-row";
+  const nameIn = document.createElement("input"); nameIn.className="name-in"; nameIn.type="text"; nameIn.value=oldName;
+  const tagIn = document.createElement("input"); tagIn.className="tag-in"; tagIn.type="text"; tagIn.value=oldTag; tagIn.placeholder="Etiket";
+  wrap.appendChild(nameIn); wrap.appendChild(tagIn); li.appendChild(wrap);
+  nameIn.focus(); nameIn.select();
+  let committed = false;
+  function commit(){
+    if(committed) return; committed = true;
+    const newName = nameIn.value.trim(); const newTag = tagIn.value.trim();
+    if(newName){
+      const dup = cats[catKey].some(x=> x!==item && x.name.toLowerCase()===newName.toLowerCase());
+      if(!dup){ snapshot(); item.name = newName; item.tag = newTag; saveCats(); }
+    }
+    redrawFn(searchInput.value);
+  }
+  [nameIn, tagIn].forEach(inp=>{
+    inp.addEventListener("keydown", e=>{
+      if(e.key==="Enter") commit();
+      if(e.key==="Escape"){ committed=true; redrawFn(searchInput.value); }
+    });
+    inp.addEventListener("blur", ()=> setTimeout(commit, 120));
+  });
+}
+
+/* ================== LISTE ICE / DISA AKTARMA ================== */
+const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
+const importMsg = document.getElementById("importMsg");
+const exportListBtn = document.getElementById("exportListBtn");
+const backupBtn = document.getElementById("backupBtn");
+
+function showImportMsg(text, isError){
+  importMsg.textContent = text;
+  importMsg.classList.toggle("error", !!isError);
+  setTimeout(()=>{ importMsg.textContent = ""; }, 7000);
+}
+importBtn.addEventListener("click", ()=> importFile.click());
+importFile.addEventListener("change", ()=>{
+  const file = importFile.files[0];
+  if(!file) return;
+  const ext = file.name.toLowerCase().split(".").pop();
+  if(ext === "xls" || ext === "xlsx"){
+    showImportMsg("Excel (.xls/.xlsx) dosyaları tarayıcıda doğrudan okunamıyor. Lütfen dosyayı Excel'de 'Farklı Kaydet > CSV (UTF-8)' ile kaydedip CSV olarak yükleyin, ya da dosyayı doğrudan Claude'a gönderin.", true);
+    importFile.value = ""; return;
+  }
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      if(ext === "json"){
+        const data = JSON.parse(reader.result);
+        if(data.cats){
+          snapshot();
+          cats = normalizeCats(data.cats);
+          if(data.menuStore) menuStore = data.menuStore;
+          if(data.variantStore) variantStore = data.variantStore;
+          if(typeof data.kurumAdi === "string"){ kurumAdi = data.kurumAdi; kurumInput.value = kurumAdi; try{localStorage.setItem("yemekKurumAdi",kurumAdi);}catch(e){} }
+          saveCats(); saveMenuStore(); saveVariantStore();
+          renderCats(); refreshVariantSelect(); rebuildAll();
+          showImportMsg("Tam yedek başarıyla içe aktarıldı.");
+        } else { showImportMsg("Bu JSON dosyası tanınan bir yedek formatında değil.", true); }
+      } else {
+        const text = reader.result.replace(/^\uFEFF/, "");
+        const lines = text.split(/\r?\n/).filter(l=>l.trim().length);
+        let added = 0, skipped = 0;
+        snapshot();
+        lines.forEach((line, i)=>{
+          const sep = line.includes(";") ? ";" : ",";
+          const parts = line.split(sep).map(s=>s.trim().replace(/^"|"$/g,""));
+          if(i===0 && /kategori/i.test(parts[0])) return;
+          const [kategori, ad, etiket] = parts;
+          if(!kategori || !ad){ skipped++; return; }
+          const catKey = ALL_CAT_KEYS.find(k=>k.toLowerCase()===kategori.toLowerCase());
+          if(!catKey){ skipped++; return; }
+          if(!cats[catKey].some(x=>x.name.toLowerCase()===ad.toLowerCase())){
+            cats[catKey].push({name:ad, tag:etiket||""}); added++;
+          } else { skipped++; }
+        });
+        saveCats(); renderCats(); rebuildAll();
+        showImportMsg(`${added} ürün eklendi, ${skipped} satır atlandı (zaten vardı veya kategori tanınmadı).`);
+      }
+    }catch(e){ showImportMsg("Dosya okunamadı: " + e.message, true); }
+    importFile.value = "";
+  };
+  reader.readAsText(file, "UTF-8");
+});
+exportListBtn.addEventListener("click", ()=>{
+  let csv = "\uFEFFKategori;Ürün Adı;Etiket\r\n";
+  ALL_CAT_KEYS.forEach(catKey=>{
+    cats[catKey].forEach(item=>{
+      csv += [catKey, item.name, item.tag||""].map(v=>`"${(v||"").replace(/"/g,'""')}"`).join(";") + "\r\n";
+    });
+  });
+  saveFile("yemek_listesi.csv", csv, "text/csv;charset=utf-8;");
+});
+backupBtn.addEventListener("click", ()=>{
+  const data = { cats, menuStore, variantStore, kurumAdi, tarih:new Date().toISOString() };
+  saveFile("yemek_menusu_yedek_" + new Date().toISOString().slice(0,10) + ".json", JSON.stringify(data, null, 1), "application/json;charset=utf-8;");
+});
+
+/* ================== AY / YIL / VARYANT / GORUNUM ================== */
+const aySelect = document.getElementById("aySelect");
+const yilSelect = document.getElementById("yilSelect");
+const viewSelect = document.getElementById("viewSelect");
+const weekField = document.getElementById("weekField");
+const weekSelect = document.getElementById("weekSelect");
+const variantSelect = document.getElementById("variantSelect");
+
+AYLAR.forEach(a=>{ const o=document.createElement("option"); o.value=a; o.textContent=a; aySelect.appendChild(o); });
+const now = new Date();
+aySelect.value = AYLAR[now.getMonth()];
+for(let y=2024; y<=2030; y++){ const o=document.createElement("option"); o.value=y; o.textContent=y; yilSelect.appendChild(o); }
+yilSelect.value = (now.getFullYear()>=2024 && now.getFullYear()<=2030) ? now.getFullYear() : 2026;
+
+function daysInMonth(monthName, year){ return new Date(year, AYLAR.indexOf(monthName)+1, 0).getDate(); }
+function dayNameOf(monthName, day, year){
+  const d = new Date(year, AYLAR.indexOf(monthName), day);
+  const map = [6,0,1,2,3,4,5];
+  return GUNLER[map[d.getDay()]];
+}
+function pad(n){ return n<10 ? "0"+n : ""+n; }
+function randomPick(catKey){ const arr = namesOf(catKey); if(!arr.length) return ""; return arr[Math.floor(Math.random()*arr.length)]; }
+function storeKey(mealId){ return mealId+"_"+yilSelect.value+"_"+aySelect.value+"_"+variantSelect.value; }
+
+let variantStore = loadVariantStore();
+function loadVariantStore(){
+  try{ const raw = localStorage.getItem("yemekVaryantlar"); if(raw) return JSON.parse(raw); }catch(e){}
+  return {};
+}
+function saveVariantStore(){ try{ localStorage.setItem("yemekVaryantlar", JSON.stringify(variantStore)); }catch(e){} scheduleSync(); }
+function variantsKey(){ return yilSelect.value+"_"+aySelect.value; }
+function refreshVariantSelect(keepName){
+  const vk = variantsKey();
+  if(!variantStore[vk] || !variantStore[vk].length) variantStore[vk] = ["Menü 1"];
+  const list = variantStore[vk];
+  variantSelect.innerHTML = "";
+  list.forEach(name=>{ const o = document.createElement("option"); o.value=name; o.textContent=name; variantSelect.appendChild(o); });
+  variantSelect.value = (keepName && list.includes(keepName)) ? keepName : list[0];
+  saveVariantStore();
+}
+const variantModal = document.getElementById("variantModal");
+document.getElementById("variantMenuBtn").addEventListener("click", ()=>{ variantModal.style.display = "flex"; });
+document.getElementById("variantModalClose").addEventListener("click", ()=> variantModal.style.display = "none");
+variantModal.addEventListener("click", e=>{ if(e.target===variantModal) variantModal.style.display="none"; });
+document.getElementById("newVariantBtn").addEventListener("click", async ()=>{
+  const vk = variantsKey();
+  const list = variantStore[vk] || ["Menü 1"];
+  let n = list.length + 1, defaultName = "Menü " + n;
+  while(list.includes(defaultName)){ n++; defaultName = "Menü " + n; }
+  const name = await uiPrompt("Yeni menü varyantının adı:", defaultName);
+  if(!name) return;
+  const trimmed = name.trim();
+  if(!trimmed) return;
+  if(!list.includes(trimmed)) list.push(trimmed);
+  variantStore[vk] = list; saveVariantStore();
+  refreshVariantSelect(trimmed); rebuildAll();
+  variantModal.style.display = "none";
+});
+document.getElementById("delVariantBtn").addEventListener("click", async ()=>{
+  const vk = variantsKey();
+  const list = variantStore[vk] || ["Menü 1"];
+  if(list.length <= 1){ await uiAlert("Bu ay için tek menü varyantı var, silinemez."); return; }
+  const cur = variantSelect.value;
+  if(!(await uiConfirm(`"${cur}" varyantı ve içindeki menü verileri silinsin mi?`))) return;
+  variantStore[vk] = list.filter(x=>x!==cur);
+  MEALS.forEach(m=> delete menuStore[m.id+"_"+yilSelect.value+"_"+aySelect.value+"_"+cur]);
+  saveVariantStore(); saveMenuStore();
+  refreshVariantSelect(); rebuildAll();
+  variantModal.style.display = "none";
+});
+variantSelect.addEventListener("change", rebuildAll);
+
+function rebuildWeekOptions(){
+  const ay = aySelect.value, yil = parseInt(yilSelect.value,10);
+  const nDays = daysInMonth(ay, yil);
+  weekSelect.innerHTML = "";
+  for(let start=1; start<=nDays; start+=7){
+    const end = Math.min(start+6, nDays);
+    const o = document.createElement("option"); o.value = start+"-"+end; o.textContent = start+" - "+end+" "+ay;
+    weekSelect.appendChild(o);
+  }
+}
+
+/* ================== PANOYA KOPYALA ================== */
+function copyToClipboard(text, btnEl){
+  function done(ok){
+    if(!btnEl) return;
+    btnEl.textContent = ok ? "✓ Kopyalandı" : "Kopyalanamadı";
+    btnEl.classList.toggle("copied", ok);
+    setTimeout(()=>{ btnEl.textContent = "📋 Kopyala"; btnEl.classList.remove("copied"); }, 1500);
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>done(true)).catch(()=> fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, cb){
+  try{
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.left = "-9999px";
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    cb(ok);
+  }catch(e){ cb(false); }
+}
+
+/* ================== MENU TABLOSU ================== */
+function buildTable(meal){
+  const bodyEl = document.getElementById(meal.id+"Body");
+  const ay = aySelect.value, yil = parseInt(yilSelect.value,10);
+  const nDays = daysInMonth(ay, yil);
+  const idx = AYLAR.indexOf(ay);
+  const key = storeKey(meal.id);
+  let stored = menuStore[key];
+  if(!stored){ stored = []; menuStore[key] = stored; }
+
+  bodyEl.innerHTML = "";
+  let changed = false;
+  for(let d=1; d<=nDays; d++){
+    const tr = document.createElement("tr");
+    tr.dataset.day = d;
+    const dateStr = pad(d)+"."+pad(idx+1)+"."+yil;
+
+    const tdDate = document.createElement("td");
+    tdDate.className="date-cell"; tdDate.dataset.label="Tarih"; tdDate.textContent = dateStr;
+    tr.appendChild(tdDate);
+    const tdDay = document.createElement("td");
+    tdDay.className="day-cell"; tdDay.dataset.label="Gün"; tdDay.textContent = dayNameOf(ay, d, yil);
+    tr.appendChild(tdDay);
+
+    if(!stored[d-1]) stored[d-1] = new Array(meal.cats.length).fill("");
+
+    meal.cats.forEach((catKey, ci)=>{
+      const td = document.createElement("td");
+      td.dataset.label = meal.labels[ci];
+      const sel = document.createElement("select");
+      sel.className="pick"; sel.dataset.cat=catKey; sel.dataset.col=ci; sel.dataset.day=d;
+      const items = namesOf(catKey).slice().sort((a,b)=>a.localeCompare(b,"tr"));
+      const blank = document.createElement("option"); blank.value=""; blank.textContent="—";
+      sel.appendChild(blank);
+      items.forEach(name=>{ const o=document.createElement("option"); o.value=name; o.textContent=name; sel.appendChild(o); });
+
+      let val;
+      if(stored[d-1][ci] && items.includes(stored[d-1][ci])){ val = stored[d-1][ci]; }
+      else { val = randomPick(catKey); changed = true; }
+      sel.value = val;
+      stored[d-1][ci] = val;
+
+      sel.addEventListener("change", ()=>{
+        snapshot();
+        stored[d-1][ci] = sel.value;
+        // Ana Yemek secilince, o gunun diger kategorilerini (corba/pilav,
+        // salata, tatli) otomatik olarak rastgele atar.
+        if(catKey === "Ana Yemek" && sel.value){
+          tr.querySelectorAll("select.pick").forEach(other=>{
+            if(other === sel) return;
+            const oci = parseInt(other.dataset.col,10);
+            const v = randomPick(other.dataset.cat);
+            other.value = v;
+            stored[d-1][oci] = v;
+          });
+        }
+        saveMenuStore();
+        recomputeWarnings(bodyEl);
+      });
+      td.appendChild(sel);
+      tr.appendChild(td);
+    });
+
+    const tdCopy = document.createElement("td");
+    tdCopy.dataset.label = "";
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button"; copyBtn.className = "copy-btn"; copyBtn.textContent = "📋 Kopyala";
+    copyBtn.title = "Bu günün ürünlerini panoya kopyala";
+    copyBtn.addEventListener("click", ()=>{
+      const rowSelects = tr.querySelectorAll("select.pick");
+      const vals = Array.from(rowSelects).map(s=> (s.value || "—").toLocaleUpperCase("tr"));
+      let text;
+      if(vals.length > 4){
+        const perLine = Math.ceil(vals.length / 3);
+        const lines = [];
+        for(let i=0; i<vals.length; i+=perLine) lines.push(vals.slice(i, i+perLine).join(", "));
+        text = lines.join("\n");
+      } else {
+        text = vals.join("\n");
+      }
+      copyToClipboard(text, copyBtn);
+    });
+    tdCopy.appendChild(copyBtn);
+    tr.appendChild(tdCopy);
+
+    bodyEl.appendChild(tr);
+  }
+  if(changed) saveMenuStore();
+  recomputeWarnings(bodyEl);
+  applyWeekFilter();
+}
+
+function recomputeWarnings(bodyEl){
+  const rows = Array.from(bodyEl.querySelectorAll("tr"));
+  rows.forEach((tr, i)=>{
+    const selects = tr.querySelectorAll("select.pick");
+    selects.forEach(sel=>{
+      const col = sel.dataset.col;
+      let repeat = false;
+      for(let back=1; back<=6; back++){
+        const prevTr = rows[i-back];
+        if(!prevTr) break;
+        const prevSel = prevTr.querySelector(`select.pick[data-col="${col}"]`);
+        if(prevSel && sel.value && prevSel.value === sel.value){ repeat = true; break; }
+      }
+      sel.classList.toggle("repeat-warn", repeat);
+      sel.title = repeat ? "Bu ürün son 7 gün içinde tekrar ediyor" : "";
+    });
+  });
+}
+
+function rebuildAll(){
+  MEALS.forEach(m=> buildTable(m));
+  rebuildWeekOptions();
+  applyWeekFilter();
+}
+
+const fillMenuModal = document.getElementById("fillMenuModal");
+const fillBalanceBtn = document.getElementById("fillBalanceBtn");
+document.getElementById("fillMenuBtn").addEventListener("click", ()=>{
+  fillBalanceBtn.style.display = (activeMealTab() === "ogle") ? "" : "none";
+  fillMenuModal.style.display = "flex";
+});
+document.getElementById("fillMenuModalClose").addEventListener("click", ()=> fillMenuModal.style.display = "none");
+fillMenuModal.addEventListener("click", e=>{ if(e.target===fillMenuModal) fillMenuModal.style.display="none"; });
+
+document.getElementById("fillRandomBtn").addEventListener("click", ()=>{
+  snapshot();
+  const mealId = activeMealTab();
+  const bodyEl = document.getElementById(mealId+"Body");
+  const key = storeKey(mealId);
+  bodyEl.querySelectorAll("select.pick").forEach(sel=>{
+    const v = randomPick(sel.dataset.cat);
+    sel.value = v;
+    menuStore[key][sel.dataset.day-1][sel.dataset.col] = v;
+  });
+  saveMenuStore();
+  recomputeWarnings(bodyEl);
+  fillMenuModal.style.display = "none";
+});
+
+document.getElementById("fillPrevMonthBtn").addEventListener("click", ()=>{
+  const mealId = activeMealTab();
+  let ay = aySelect.value, yil = parseInt(yilSelect.value,10);
+  let idx = AYLAR.indexOf(ay) - 1, py = yil;
+  if(idx < 0){ idx = 11; py -= 1; }
+  const prevVk = py+"_"+AYLAR[idx];
+  const prevVariants = variantStore[prevVk] || [];
+  const curVariant = variantSelect.value;
+  const useVariant = prevVariants.includes(curVariant) ? curVariant : prevVariants[0];
+  const prevKey = mealId+"_"+py+"_"+AYLAR[idx]+"_"+useVariant;
+  const prevData = menuStore[prevKey];
+  if(!useVariant || !prevData || !prevData.length){
+    uiAlert("Geçen ay (" + AYLAR[idx] + " " + py + ") için kayıtlı bir menü bulunamadı.");
+    return;
+  }
+  snapshot();
+  const bodyEl = document.getElementById(mealId+"Body");
+  const key = storeKey(mealId);
+  bodyEl.querySelectorAll("tr").forEach(tr=>{
+    const d = parseInt(tr.dataset.day,10);
+    const src = prevData[d-1];
+    if(!src) return;
+    tr.querySelectorAll("select.pick").forEach(sel=>{
+      const ci = sel.dataset.col;
+      const items = namesOf(sel.dataset.cat);
+      const v = src[ci];
+      if(v && items.includes(v)){ sel.value = v; menuStore[key][d-1][ci] = v; }
+    });
+  });
+  saveMenuStore();
+  recomputeWarnings(bodyEl);
+  fillMenuModal.style.display = "none";
+});
+
+aySelect.addEventListener("change", ()=>{ refreshVariantSelect(); rebuildAll(); });
+yilSelect.addEventListener("change", ()=>{ refreshVariantSelect(); rebuildAll(); });
+viewSelect.addEventListener("change", ()=>{
+  weekField.style.display = viewSelect.value === "haftalik" ? "flex" : "none";
+  applyWeekFilter();
+});
+weekSelect.addEventListener("change", applyWeekFilter);
+
+function applyWeekFilter(){
+  const haftalik = viewSelect.value === "haftalik";
+  let range = null;
+  if(haftalik && weekSelect.value){ const [s,e] = weekSelect.value.split("-").map(Number); range = [s,e]; }
+  MEALS.forEach(m=>{
+    const bodyEl = document.getElementById(m.id+"Body");
+    bodyEl.querySelectorAll("tr").forEach(tr=>{
+      const d = parseInt(tr.dataset.day,10);
+      tr.style.display = (!range || (d>=range[0] && d<=range[1])) ? "" : "none";
+    });
+  });
+}
+
+/* ================== OGLE ANA YEMEGI DENGELI DAGIT ================== */
+function itemsWithTag(catKey){ return cats[catKey]; }
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function pickFrom(itemObjs){ if(!itemObjs.length) return ""; return itemObjs[Math.floor(Math.random()*itemObjs.length)].name; }
+
+function weekBlocksOfMonth(){
+  // ay icindeki gunleri, Pazartesi baslangicli haftalara ayirir; sadece hafta ici (Pzt-Cum) gunleri icerir
+  const ay = aySelect.value, yil = parseInt(yilSelect.value,10);
+  const nDays = daysInMonth(ay, yil);
+  const weeks = [];
+  let cur = [];
+  for(let d=1; d<=nDays; d++){
+    const gun = dayNameOf(ay, d, yil);
+    if(gun === "Pazartesi" && cur.length){ weeks.push(cur); cur = []; }
+    if(["Pazartesi","Salı","Çarşamba","Perşembe","Cuma"].includes(gun)) cur.push(d);
+  }
+  if(cur.length) weeks.push(cur);
+  return weeks;
+}
+
+function applyBalance(strategy, opts){
+  const bodyEl = document.getElementById("ogleBody");
+  const key = storeKey("ogle");
+  const stored = menuStore[key];
+  snapshot();
+  const weeks = weekBlocksOfMonth();
+
+  const anaItems = itemsWithTag("Ana Yemek");
+  const byTag = {};
+  anaItems.forEach(it=>{ const t = it.tag || "Diğer"; (byTag[t] = byTag[t]||[]).push(it); });
+
+  function setCell(d, ci, val){
+    const sel = bodyEl.querySelector(`tr[data-day="${d}"] select.pick[data-col="${ci}"]`);
+    if(!sel) return;
+    if(!Array.from(sel.options).some(o=>o.value===val)) return;
+    sel.value = val;
+    stored[d-1][ci] = val;
+  }
+
+  if(strategy === "etTavuk"){
+    const order = ["Tavuk","Kırmızı Et","Balık","Vejetaryen"].filter(t=> byTag[t] && byTag[t].length);
+    weeks.forEach(week=>{
+      const pattern = [];
+      // 5 gunluk hedef: yaklasik esit dagit, mevcut etiketleri dondurerek karistir
+      let i = 0;
+      while(pattern.length < week.length){ pattern.push(order[i % order.length]); i++; }
+      shuffle(pattern).forEach((tag, idx)=>{
+        const d = week[idx];
+        const val = pickFrom(byTag[tag] || anaItems);
+        setCell(d, 0, val);
+      });
+    });
+  } else if(strategy === "karbonhidrat"){
+    const corbaItems = itemsWithTag("Çorba / Pilav");
+    const agir = corbaItems.filter(it=> !it.name.toLocaleLowerCase("tr").includes("çorba"));
+    const hafif = corbaItems.filter(it=> it.name.toLocaleLowerCase("tr").includes("çorba"));
+    weeks.forEach(week=>{
+      const pattern = [];
+      for(let i=0;i<week.length;i++) pattern.push(i%2===0 ? "hafif" : "agir");
+      shuffle(pattern).forEach((tip, idx)=>{
+        const d = week[idx];
+        const pool = tip==="agir" ? (agir.length?agir:corbaItems) : (hafif.length?hafif:corbaItems);
+        setCell(d, 1, pickFrom(pool));
+      });
+    });
+  } else if(strategy === "cesitlilik"){
+    weeks.forEach(week=>{
+      [0,1].forEach(ci=>{
+        const catKey = ci===0 ? "Ana Yemek" : "Çorba / Pilav";
+        const pool = shuffle(itemsWithTag(catKey));
+        week.forEach((d,idx)=>{
+          const val = pool.length ? pool[idx % pool.length].name : "";
+          setCell(d, ci, val);
+        });
+      });
+    });
+  } else if(strategy === "custom"){
+    const tag = opts.tag, maxPerWeek = opts.max;
+    const matching = anaItems.filter(it=> (it.tag||"") === tag);
+    const other = anaItems.filter(it=> (it.tag||"") !== tag);
+    weeks.forEach(week=>{
+      const order = shuffle(week.map((d,idx)=>idx));
+      let used = 0;
+      const dayVals = new Array(week.length);
+      order.forEach(idx=>{
+        if(used < maxPerWeek && matching.length){ dayVals[idx] = pickFrom(matching); used++; }
+        else { dayVals[idx] = pickFrom(other.length?other:anaItems); }
+      });
+      week.forEach((d,idx)=> setCell(d, 0, dayVals[idx]));
+    });
+  }
+
+  saveMenuStore();
+  recomputeWarnings(bodyEl);
+}
+
+const balanceModal = document.getElementById("balanceModal");
+function refreshCustomTagOptions(){
+  const sel = document.getElementById("customTagInput");
+  const tags = [...new Set(itemsWithTag("Ana Yemek").map(it=>it.tag).filter(Boolean))];
+  sel.innerHTML = "";
+  tags.forEach(t=>{ const o=document.createElement("option"); o.value=t; o.textContent=t; sel.appendChild(o); });
+}
+document.getElementById("fillBalanceBtn").addEventListener("click", ()=>{
+  refreshCustomTagOptions();
+  fillMenuModal.style.display = "none";
+  balanceModal.style.display = "flex";
+});
+document.getElementById("balanceModalClose").addEventListener("click", ()=> balanceModal.style.display = "none");
+balanceModal.addEventListener("click", e=>{ if(e.target===balanceModal) balanceModal.style.display="none"; });
+document.querySelectorAll('input[name="strategy"]').forEach(r=>{
+  r.addEventListener("change", ()=>{
+    document.getElementById("customRuleFields").style.display = (r.value==="custom" && r.checked) ? "flex" : "none";
+  });
+});
+document.getElementById("balanceApplyBtn").addEventListener("click", ()=>{
+  const strategy = document.querySelector('input[name="strategy"]:checked').value;
+  const opts = { tag: document.getElementById("customTagInput").value, max: parseInt(document.getElementById("customMaxInput").value,10) || 0 };
+  try{ applyBalance(strategy, opts); } catch(e){ uiAlert("Dağıtım uygulanamadı: " + e.message); }
+  balanceModal.style.display = "none";
+});
+
+/* ================== RAPOR (EXCEL / PDF / WORD) ================== */
+const MEAL_COLORS = {kahvalti:"#b5762c", ogle:"#5b83a6", araogun:"#4f7a63", aksam:"#28425c"};
+
+function tableToRows(bodyEl){
+  const rows = [];
+  bodyEl.querySelectorAll("tr").forEach(tr=>{
+    if(tr.style.display === "none") return;
+    const tds = tr.querySelectorAll("td");
+    const date = tds[0].textContent, day = tds[1].textContent;
+    const vals = Array.from(tr.querySelectorAll("select.pick")).map(s=>s.value || "—");
+    rows.push({date, day, vals});
+  });
+  return rows;
+}
+
+/* Rapor verisi: her gun TEK satir */
+function buildReport(kind){
+  const ay = aySelect.value, yil = yilSelect.value, varyant = variantSelect.value;
+  const haftaTxt = (viewSelect.value==="haftalik" && weekSelect.value) ? (" ("+weekSelect.value.replace("-"," - ")+")") : "";
+  let columns, rows, colors, weights, scope;
+  if(kind === "birlesik"){
+    scope = "Tüm Öğünler";
+    columns = ["Tarih","Gün", ...MEALS.map(m=>m.title.replace(" Menüsü",""))];
+    colors = ["#3d3a34","#3d3a34", ...MEALS.map(m=>MEAL_COLORS[m.id])];
+    weights = [1.0,1.1,4.6,3.3,2.2,3.5];
+    const perMeal = MEALS.map(m=> tableToRows(document.getElementById(m.id+"Body")));
+    rows = perMeal[0].map((r,i)=> [r.date, r.day, ...perMeal.map(pm=> pm[i] ? pm[i].vals.filter(v=>v && v!=="—").join(", ") : "")]);
+  } else {
+    const meal = mealById(kind);
+    scope = meal.title;
+    columns = ["Tarih","Gün", ...meal.labels];
+    colors = ["#3d3a34","#3d3a34", ...meal.labels.map(()=>MEAL_COLORS[meal.id])];
+    const each = 13.6 / meal.labels.length;
+    weights = [1.0,1.1, ...meal.labels.map(()=>each)];
+    rows = tableToRows(document.getElementById(meal.id+"Body")).map(r=>[r.date, r.day, ...r.vals]);
+  }
+  const title = (kurumAdi ? kurumAdi + " — " : "") + "Yemek Menüsü Raporu";
+  const subtitle = ay+" "+yil+" — "+varyant+haftaTxt+" — "+scope;
+  const fileBase = ("Yemek_Menusu_" + (kind==="birlesik" ? "Tum_Ogunler" : kind) + "_" + ay + "_" + yil + "_" + varyant).replace(/\s+/g,"_");
+  return {title, subtitle, columns, rows, colors, weights, fileBase};
+}
+
+/* ---- Yardimcilar ---- */
+function downloadBytes(bytes, mime, filename){ return saveFile(filename, new Blob([bytes], {type:mime})); }
+function xmlEsc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ---- Basit ZIP yazici (sikistirmasiz) : xlsx / docx icin ---- */
+const CRC_TABLE = (()=>{ const t = new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); t[n]=c>>>0; } return t; })();
+function crc32(buf){ let c = 0xFFFFFFFF; for(let i=0;i<buf.length;i++) c = CRC_TABLE[(c^buf[i])&0xFF] ^ (c>>>8); return (c ^ 0xFFFFFFFF)>>>0; }
+function makeZip(files){
+  const enc = new TextEncoder();
+  const chunks = [], central = [];
+  let offset = 0;
+  files.forEach(f=>{
+    const nameB = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true);
+    lh.setUint16(8,0,true); lh.setUint16(10,0,true); lh.setUint16(12,0x21,true);
+    lh.setUint32(14,crc,true); lh.setUint32(18,data.length,true); lh.setUint32(22,data.length,true);
+    lh.setUint16(26,nameB.length,true); lh.setUint16(28,0,true);
+    chunks.push(new Uint8Array(lh.buffer), nameB, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true);
+    ch.setUint16(10,0,true); ch.setUint16(12,0,true); ch.setUint16(14,0x21,true);
+    ch.setUint32(16,crc,true); ch.setUint32(20,data.length,true); ch.setUint32(24,data.length,true);
+    ch.setUint16(28,nameB.length,true); ch.setUint32(42,offset,true);
+    central.push(new Uint8Array(ch.buffer), nameB);
+    offset += 30 + nameB.length + data.length;
+  });
+  let cdSize = 0; central.forEach(c=> cdSize += c.length);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true);
+  end.setUint32(12,cdSize,true); end.setUint32(16,offset,true);
+  const all = [...chunks, ...central, new Uint8Array(end.buffer)];
+  let total = 0; all.forEach(a=> total += a.length);
+  const out = new Uint8Array(total); let p = 0; all.forEach(a=>{ out.set(a,p); p += a.length; });
+  return out;
+}
+
+/* ---- EXCEL (.xlsx) ---- */
+function colLetter(i){ let s=""; i++; while(i>0){ const m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; }
+function makeXlsx(rep){
+  const nCols = rep.columns.length;
+  const wsum = rep.weights.reduce((a,b)=>a+b,0);
+  const restSum = rep.weights.slice(2).reduce((a,b)=>a+b,0);
+  const widths = rep.weights.map((w,i)=> i===0 ? 12 : (i===1 ? 13 : Math.round(w/restSum*125*10)/10));
+  const fillColors = [...new Set(rep.colors.map(c=>c.replace("#","").toUpperCase()))];
+  const fillsXml = fillColors.map(c=>`<fill><patternFill patternType="solid"><fgColor rgb="FF${c}"/><bgColor indexed="64"/></patternFill></fill>`).join("");
+  const headXf = fillColors.map((c,i)=>`<xf numFmtId="0" fontId="1" fillId="${i+2}" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>`).join("");
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="5">
+<font><sz val="9"/><name val="Calibri"/></font>
+<font><b/><sz val="9"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+<font><b/><sz val="14"/><name val="Calibri"/></font>
+<font><sz val="10"/><color rgb="FF555555"/><name val="Calibri"/></font>
+<font><b/><sz val="9"/><name val="Calibri"/></font>
+</fonts>
+<fills count="${2+fillColors.length}"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>${fillsXml}</fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFBFBFBF"/></left><right style="thin"><color rgb="FFBFBFBF"/></right><top style="thin"><color rgb="FFBFBFBF"/></top><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="${6+fillColors.length}">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+${headXf}
+</cellXfs>
+</styleSheet>`;
+  const S_TITLE=1, S_SUB=2, S_BODY=3, S_CENTER=4, S_SIGN=5, S_HEAD0=6;
+  const cell = (r,c,text,s)=> `<c r="${colLetter(c)}${r}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(text)}</t></is></c>`;
+  const lastCol = colLetter(nCols-1);
+  let sheetRows = "";
+  sheetRows += `<row r="1" ht="24" customHeight="1">${cell(1,0,rep.title,S_TITLE)}</row>`;
+  sheetRows += `<row r="2" ht="16" customHeight="1">${cell(2,0,rep.subtitle,S_SUB)}</row>`;
+  let hc = ""; rep.columns.forEach((t,i)=>{ hc += cell(3,i,t,S_HEAD0 + fillColors.indexOf(rep.colors[i].replace("#","").toUpperCase())); });
+  sheetRows += `<row r="3" ht="22" customHeight="1">${hc}</row>`;
+  rep.rows.forEach((row,ri)=>{
+    const r = 4+ri; let lines = 1, cs = "";
+    row.forEach((t,ci)=>{
+      const perLine = Math.max(4, widths[ci]*0.9);
+      lines = Math.max(lines, Math.ceil(String(t).length / perLine));
+      cs += cell(r,ci,t, ci<2 ? S_CENTER : S_BODY);
+    });
+    sheetRows += `<row r="${r}" ht="${lines*12+4}" customHeight="1">${cs}</row>`;
+  });
+  const signRow = 4 + rep.rows.length + 2;
+  const half = Math.max(1, Math.floor(nCols/2));
+  sheetRows += `<row r="${signRow}" ht="18" customHeight="1">${cell(signRow,0,"Hazırlayan",S_SIGN)}${cell(signRow,half,"Onaylayan",S_SIGN)}</row>`;
+  const merges = [`A1:${lastCol}1`, `A2:${lastCol}2`, `A${signRow}:${colLetter(half-1)}${signRow}`, `${colLetter(half)}${signRow}:${lastCol}${signRow}`];
+  const colsXml = widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join("");
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+<cols>${colsXml}</cols>
+<sheetData>${sheetRows}</sheetData>
+<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join("")}</mergeCells>
+<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/>
+<pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="2"/>
+</worksheet>`;
+  const files = [
+    {name:"[Content_Types].xml", text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`},
+    {name:"_rels/.rels", text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {name:"xl/workbook.xml", text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Rapor" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm.Print_Titles" localSheetId="0">Rapor!$3:$3</definedName></definedNames></workbook>`},
+    {name:"xl/_rels/workbook.xml.rels", text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name:"xl/styles.xml", text:styles},
+    {name:"xl/worksheets/sheet1.xml", text:sheet},
+  ];
+  return makeZip(files);
+}
+
+/* ---- WORD (.docx) ---- */
+function makeDocx(rep){
+  const TOTAL = 15704;
+  const wsum = rep.weights.reduce((a,b)=>a+b,0);
+  const tw = rep.weights.map(w=> Math.round(w/wsum*TOTAL));
+  const sz = 15;
+  const run = (t, o={}) => `<w:r><w:rPr>${o.b?"<w:b/>":""}${o.color?`<w:color w:val="${o.color}"/>`:""}<w:sz w:val="${o.sz||sz}"/></w:rPr><w:t xml:space="preserve">${xmlEsc(t)}</w:t></w:r>`;
+  const para = (inner, jc) => `<w:p><w:pPr><w:spacing w:before="0" w:after="0"/>${jc?`<w:jc w:val="${jc}"/>`:""}</w:pPr>${inner}</w:p>`;
+  const tc = (t, w, o={}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.fill?`<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>`:""}<w:vAlign w:val="center"/></w:tcPr>${para(run(t,o), o.jc)}</w:tc>`;
+  const border = `<w:top w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/><w:left w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/><w:bottom w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/><w:right w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/><w:insideH w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/><w:insideV w:val="single" w:sz="4" w:space="0" w:color="BFBFBF"/>`;
+  let tbl = `<w:tbl><w:tblPr><w:tblW w:w="${TOTAL}" w:type="dxa"/><w:tblLayout w:type="fixed"/><w:tblBorders>${border}</w:tblBorders><w:tblCellMar><w:top w:w="20" w:type="dxa"/><w:left w:w="60" w:type="dxa"/><w:bottom w:w="20" w:type="dxa"/><w:right w:w="60" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${tw.map(w=>`<w:gridCol w:w="${w}"/>`).join("")}</w:tblGrid>`;
+  tbl += `<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>${rep.columns.map((t,i)=> tc(t, tw[i], {b:true, color:"FFFFFF", fill:rep.colors[i].replace("#","").toUpperCase(), jc:"center"})).join("")}</w:tr>`;
+  rep.rows.forEach(row=>{
+    tbl += `<w:tr><w:trPr><w:cantSplit/></w:trPr>${row.map((t,i)=> tc(t, tw[i], i<2 ? {jc:"center"} : {})).join("")}</w:tr>`;
+  });
+  tbl += `</w:tbl>`;
+  const half = Math.floor(TOTAL/2);
+  const noB = `<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>`;
+  const signCell = (t,w)=> `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:tcBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="333333"/></w:tcBorders></w:tcPr>${para(run(t,{b:true}),"center")}</w:tc>`;
+  const gap = `<w:tc><w:tcPr><w:tcW w:w="${TOTAL-2*4500}" w:type="dxa"/></w:tcPr>${para("")}</w:tc>`;
+  const sign = `<w:tbl><w:tblPr><w:tblW w:w="${TOTAL}" w:type="dxa"/><w:tblLayout w:type="fixed"/>${noB}</w:tblPr><w:tblGrid><w:gridCol w:w="4500"/><w:gridCol w:w="${TOTAL-9000}"/><w:gridCol w:w="4500"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr>${signCell("Hazırlayan",4500)}${gap.replace(String(TOTAL-2*4500), String(TOTAL-9000))}${signCell("Onaylayan",4500)}</w:tr></w:tbl>`;
+  const body = para(run(rep.title,{b:true,sz:28})) + para(run(rep.subtitle,{sz:18,color:"555555"})) + para("") + tbl + para("") + sign + para("");
+  const doc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/><w:pgMar w:top="567" w:right="567" w:bottom="567" w:left="567" w:header="284" w:footer="284" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri" w:eastAsia="Calibri"/><w:sz w:val="${sz}"/><w:lang w:val="tr-TR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
+  const files = [
+    {name:"[Content_Types].xml", text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`},
+    {name:"_rels/.rels", text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`},
+    {name:"word/_rels/document.xml.rels", text:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name:"word/styles.xml", text:styles},
+    {name:"word/document.xml", text:doc},
+  ];
+  return makeZip(files);
+}
+
+/* ---- PDF (A4 yatay, en fazla 2 sayfa) ---- */
+function renderReportPages(rep){
+  const PXMM = 8, PW = 297*PXMM, PH = 210*PXMM, M = 10*PXMM;
+  const FF = '"Segoe UI", Arial, Helvetica, sans-serif';
+  const usableW = PW - 2*M;
+  const wsum = rep.weights.reduce((a,b)=>a+b,0);
+  const colW = rep.weights.map(w=> w/wsum*usableW);
+  const pad = 1.0*PXMM;
+  const mctx = document.createElement("canvas").getContext("2d");
+  function wrap(text, maxW, fontStr){
+    mctx.font = fontStr;
+    const words = String(text).split(" "); const lines = []; let cur = "";
+    words.forEach(w=>{
+      const t = cur ? cur+" "+w : w;
+      if(!cur || mctx.measureText(t).width <= maxW) cur = t; else { lines.push(cur); cur = w; }
+    });
+    if(cur) lines.push(cur);
+    return lines.length ? lines : [""];
+  }
+  const titleH = 17*PXMM, signH = 18*PXMM;
+  let layout = null;
+  for(let pt = 10; pt >= 4; pt -= 0.5){
+    const px = pt*2.822, lineH = px*1.22;
+    const bodyF = `${px}px ${FF}`, headF = `bold ${px}px ${FF}`;
+    const headLines = rep.columns.map((t,i)=> wrap(t, colW[i]-2*pad, headF));
+    const hh = Math.max(...headLines.map(l=>l.length))*lineH + 2*pad;
+    const rowInfo = rep.rows.map(row=>{
+      const lines = row.map((t,i)=> wrap(t, colW[i]-2*pad, bodyF));
+      return {lines, h: Math.max(...lines.map(l=>l.length))*lineH + 2*pad};
+    });
+    // sayfalara bol (imza blogu son satir gibi)
+    const pages = [[]]; let used = 0; let avail = PH - 2*M - titleH - hh - 6*PXMM;
+    const items = [...rowInfo.map((r,i)=>({i,h:r.h})), {sign:true, h:signH}];
+    items.forEach(it=>{
+      if(used + it.h > avail && pages[pages.length-1].length){ pages.push([]); used = 0; avail = PH - 2*M - hh - 6*PXMM; }
+      pages[pages.length-1].push(it); used += it.h;
+    });
+    layout = {pt, px, lineH, bodyF, headF, headLines, hh, rowInfo, pages};
+    if(pages.length <= 2) break;
+  }
+  const L = layout;
+  const canvases = [];
+  L.pages.forEach((items, pi)=>{
+    const cv = document.createElement("canvas"); cv.width = PW; cv.height = PH;
+    const c = cv.getContext("2d");
+    c.fillStyle = "#fff"; c.fillRect(0,0,PW,PH);
+    let y = M;
+    if(pi === 0){
+      c.fillStyle = "#2b2420"; c.font = `bold ${16*2.822}px ${FF}`; c.textBaseline = "top";
+      c.fillText(rep.title, M, y);
+      c.fillStyle = "#555"; c.font = `${9.5*2.822}px ${FF}`;
+      c.fillText(rep.subtitle, M, y + 8.2*PXMM);
+      y += titleH;
+    }
+    // baslik satiri
+    let x = M;
+    rep.columns.forEach((t,i)=>{
+      c.fillStyle = rep.colors[i]; c.fillRect(x, y, colW[i], L.hh);
+      c.strokeStyle = "#bfbfbf"; c.lineWidth = 1; c.strokeRect(x, y, colW[i], L.hh);
+      c.fillStyle = "#fff"; c.font = L.headF; c.textBaseline = "middle"; c.textAlign = "center";
+      const lines = L.headLines[i]; const th = lines.length*L.lineH; 
+      lines.forEach((ln,li)=> c.fillText(ln, x+colW[i]/2, y + (L.hh-th)/2 + L.lineH*(li+0.5)));
+      x += colW[i];
+    });
+    y += L.hh;
+    let signAt = null;
+    items.forEach((it, k)=>{
+      if(it.sign){ signAt = y; return; }
+      const info = L.rowInfo[it.i];
+      x = M;
+      if(it.i % 2 === 1){ c.fillStyle = "#faf6ea"; c.fillRect(M, y, usableW, info.h); }
+      info.lines.forEach((lines, ci)=>{
+        c.strokeStyle = "#bfbfbf"; c.lineWidth = 1; c.strokeRect(x, y, colW[ci], info.h);
+        c.fillStyle = "#2b2420"; c.font = L.bodyF; c.textBaseline = "middle";
+        const center = ci < 2; c.textAlign = center ? "center" : "left";
+        const th = lines.length*L.lineH;
+        lines.forEach((ln,li)=> c.fillText(ln, center ? x+colW[ci]/2 : x+pad, y + (info.h-th)/2 + L.lineH*(li+0.5)));
+        x += colW[ci];
+      });
+      y += info.h;
+    });
+    if(signAt !== null){
+      const sy = signAt + 12*PXMM;
+      c.strokeStyle = "#333"; c.lineWidth = 2; c.textAlign = "center"; c.textBaseline = "top";
+      const w1 = usableW*0.3;
+      [[M+usableW*0.10, "Hazırlayan"],[M+usableW*0.60, "Onaylayan"]].forEach(([sx,label])=>{
+        c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx+w1, sy); c.stroke();
+        c.fillStyle = "#2b2420"; c.font = `bold ${9*2.822}px ${FF}`; c.fillText(label, sx+w1/2, sy + 1.5*PXMM);
+      });
+    }
+    c.textAlign = "right"; c.textBaseline = "alphabetic"; c.fillStyle = "#888"; c.font = `${7*2.822}px ${FF}`;
+    c.fillText("Sayfa " + (pi+1) + " / " + L.pages.length, PW - M, PH - 4*PXMM);
+    canvases.push(cv);
+  });
+  return canvases;
+}
+function makePdf(canvases){
+  const enc = new TextEncoder();
+  const parts = []; let pos = 0; const offs = [];
+  const push = x => { const b = (typeof x === "string") ? enc.encode(x) : x; parts.push(b); pos += b.length; };
+  const n = canvases.length;
+  const W = 841.89, H = 595.28;
+  push("%PDF-1.4\n");
+  offs[1] = pos; push("1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n");
+  offs[2] = pos; push(`2 0 obj\n<< /Type /Pages /Kids [${canvases.map((_,i)=>`${3+3*i} 0 R`).join(" ")}] /Count ${n} >>\nendobj\n`);
+  canvases.forEach((cv,i)=>{
+    const pid = 3+3*i, cid = 4+3*i, iid = 5+3*i;
+    const b64 = cv.toDataURL("image/jpeg", 0.92).split(",")[1];
+    const bin = atob(b64); const jpg = new Uint8Array(bin.length); for(let k=0;k<bin.length;k++) jpg[k] = bin.charCodeAt(k);
+    offs[pid] = pos; push(`${pid} 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Contents ${cid} 0 R /Resources << /XObject << /Im0 ${iid} 0 R >> >> >>\nendobj\n`);
+    const content = `q ${W} 0 0 ${H} 0 0 cm /Im0 Do Q`;
+    offs[cid] = pos; push(`${cid} 0 obj\n<< /Length ${content.length} >>\nstream\n${content}\nendstream\nendobj\n`);
+    offs[iid] = pos; push(`${iid} 0 obj\n<< /Type /XObject /Subtype /Image /Width ${cv.width} /Height ${cv.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpg.length} >>\nstream\n`);
+    push(jpg); push("\nendstream\nendobj\n");
+  });
+  const total = 3 + 3*n;
+  const xrefPos = pos;
+  let xref = `xref\n0 ${total}\n0000000000 65535 f \n`;
+  for(let i=1;i<total;i++) xref += String(offs[i]).padStart(10,"0") + " 00000 n \n";
+  push(xref + `trailer\n<< /Size ${total} /Root 1 0 R >>\nstartxref\n${xrefPos}\n%%EOF`);
+  const out = new Uint8Array(pos); let p = 0; parts.forEach(a=>{ out.set(a,p); p += a.length; });
+  return out;
+}
+
+function exportReport(kind, fmt){
+  const rep = buildReport(kind);
+  if(fmt === "xlsx") downloadBytes(makeXlsx(rep), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", rep.fileBase + ".xlsx");
+  else if(fmt === "docx") downloadBytes(makeDocx(rep), "application/vnd.openxmlformats-officedocument.wordprocessingml.document", rep.fileBase + ".docx");
+  else if(fmt === "pdf") downloadBytes(makePdf(renderReportPages(rep)), "application/pdf", rep.fileBase + ".pdf");
+  else if(fmt === "csv"){
+    let csv = "\uFEFF" + rep.columns.join(";") + "\r\n";
+    rep.rows.forEach(row=>{ csv += row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(";") + "\r\n"; });
+    downloadBytes(new TextEncoder().encode(csv), "text/csv;charset=utf-8;", rep.fileBase + ".csv");
+  }
+}
+
+/* ---- Rapor kapsam + format secim penceresi ---- */
+const reportModal = document.getElementById("reportModal");
+function openReportModal(){
+  document.getElementById("reportScopeLabel").textContent = "Açık olan öğünün menüsü: " + mealById(activeMealTab()).title;
+  reportModal.querySelector('input[name="reportScope"][value="page"]').checked = true;
+  reportModal.style.display = "flex";
+}
+function closeReportModal(){ reportModal.style.display = "none"; }
+reportModal.querySelectorAll("button[data-fmt]").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    const scope = reportModal.querySelector('input[name="reportScope"]:checked').value;
+    const kind = scope === "birlesik" ? "birlesik" : activeMealTab();
+    try{ exportReport(kind, b.dataset.fmt); }
+    catch(e){ uiAlert("Rapor oluşturulamadı: " + e.message); }
+    closeReportModal();
+  });
+});
+document.getElementById("reportModalClose").addEventListener("click", closeReportModal);
+reportModal.addEventListener("click", e=>{ if(e.target === reportModal) closeReportModal(); });
+document.getElementById("reportBtn").addEventListener("click", openReportModal);
+
+/* ================== BULUT SENKRONIZASYONU ================== */
+/* Belgeler:  app/liste    -> {cats}
+              app/ayarlar  -> {kurumAdi, variantStore}
+              menuler/m-<yil>-<ay no> -> {entries:{ "<ogun>_<yil>_<ay>_<varyant>": [[...]] }} */
+const syncStatusEl = document.getElementById("syncStatus");
+let cloudDb = null, cloudReady = false, cloudReadOnly = false;
+const lastSynced = {};
+let syncTimer = null, syncing = false, syncAgain = false, syncErr = null;
+
+function markReadOnly(){
+  cloudReadOnly = true;
+  clearTimeout(syncTimer); syncTimer = null;
+  document.getElementById("permBanner").hidden = false;
+  setSync("warn", "👁 Yalnızca görüntüleme");
+}
+function setSync(kind, text){
+  syncStatusEl.className = "sync-status" + (kind==="busy" ? " busy" : kind==="warn" ? " warn" : "");
+  syncStatusEl.textContent = text;
+}
+function stable(v){
+  if(Array.isArray(v)) return "[" + v.map(stable).join(",") + "]";
+  if(v && typeof v === "object") return "{" + Object.keys(v).sort().map(k=> JSON.stringify(k)+":"+stable(v[k])).join(",") + "}";
+  return JSON.stringify(v === undefined ? null : v);
+}
+function monthDocId(fullKey){
+  const parts = fullKey.split("_");
+  if(parts.length < 4) return null;
+  const mi = AYLAR.indexOf(parts[2]);
+  if(mi < 0 || !/^\d{4}$/.test(parts[1])) return null;
+  return "m-" + parts[1] + "-" + (mi+1);
+}
+function desiredDocs(){
+  const out = {};
+  out["app/liste"] = {cats};
+  out["app/ayarlar"] = {kurumAdi, variantStore};
+  for(const k in menuStore){
+    const id = monthDocId(k); if(!id) continue;
+    const path = "menuler/" + id;
+    if(!out[path]) out[path] = {entries:{}};
+    out[path].entries[k] = menuStore[k];
+  }
+  for(const path in lastSynced){
+    if(path.startsWith("menuler/") && !out[path]) out[path] = {entries:{}};
+  }
+  return out;
+}
+function scheduleSync(){
+  if(!cloudDb || !cloudReady || cloudReadOnly) return;
+  setSync("busy", "☁️ Kaydediliyor…");
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>{ syncTimer = null; runSync(); }, 700);
+}
+async function runSync(){
+  if(!cloudDb || !cloudReady || cloudReadOnly) return false;
+  if(syncing){ syncAgain = true; return true; }
+  syncing = true; syncErr = null;
+  const docs = desiredDocs();
+  for(const path in docs){
+    const json = stable(docs[path]);
+    if(lastSynced[path] === json) continue;
+    try{
+      await cloudDb.doc(path).set(docs[path]);
+      lastSynced[path] = json;
+    }catch(e){
+      syncErr = e;
+      if(e && e.code === "invalid_argument"){ markReadOnly(); }
+      break;
+    }
+  }
+  syncing = false;
+  if(syncAgain && !syncErr){ syncAgain = false; return runSync(); }
+  syncAgain = false;
+  if(cloudReadOnly) markReadOnly();
+  else if(syncErr){
+    const code = syncErr.code;
+    if(code === "quota_exceeded") setSync("warn", "⚠️ Bulut alanı doldu. Eski ayların menülerini silip tekrar deneyin.");
+    else { setSync("warn", "⚠️ Buluta kaydedilemedi, tekrar denenecek."); setTimeout(()=> scheduleSync(), 5000); }
+  }
+  else if(!syncTimer) setSync("ok", "☁️ Bulutla eşitlendi");
+  return !syncErr;
+}
+async function flushSync(){
+  if(!cloudDb || !cloudReady || cloudReadOnly) return false;
+  clearTimeout(syncTimer); syncTimer = null;
+  while(syncing) await new Promise(r=>setTimeout(r,150));
+  return runSync();
+}
+
+/* Uzaktan gelen belgeyi uygula. Yerelde bekleyen kayit varsa yerel kazanir. */
+let rerenderFlags = {}, rerenderTimer = null;
+function scheduleRerender(flags){
+  Object.assign(rerenderFlags, flags);
+  clearTimeout(rerenderTimer);
+  rerenderTimer = setTimeout(()=>{
+    const f = rerenderFlags; rerenderFlags = {};
+    if(f.cats) renderCats();
+    if(f.variants) refreshVariantSelectQuiet(variantSelect.value);
+    rebuildAll();
+  }, 60);
+}
+function refreshVariantSelectQuiet(keepName){
+  const vk = variantsKey();
+  if(!variantStore[vk] || !variantStore[vk].length) variantStore[vk] = ["Menü 1"];
+  const list = variantStore[vk];
+  variantSelect.innerHTML = "";
+  list.forEach(name=>{ const o = document.createElement("option"); o.value=name; o.textContent=name; variantSelect.appendChild(o); });
+  variantSelect.value = (keepName && list.includes(keepName)) ? keepName : list[0];
+}
+function applyRemote(path, body, render){
+  const json = stable(body || {});
+  const pending = syncTimer || syncing;
+  lastSynced[path] = json;
+  if(pending) return;
+  const local = desiredDocs()[path];
+  if(local && stable(local) === json) return;
+  if(path === "app/liste"){
+    cats = normalizeCats((body && body.cats) || {});
+    try{ localStorage.setItem("yemekListesiCatsV4", JSON.stringify(cats)); }catch(e){}
+    if(render) scheduleRerender({cats:true});
+  } else if(path === "app/ayarlar"){
+    if(typeof body.kurumAdi === "string"){
+      kurumAdi = body.kurumAdi;
+      if(document.activeElement !== kurumInput) kurumInput.value = kurumAdi;
+      try{ localStorage.setItem("yemekKurumAdi", kurumAdi); }catch(e){}
+    }
+    if(body.variantStore && typeof body.variantStore === "object"){
+      variantStore = JSON.parse(JSON.stringify(body.variantStore));
+      try{ localStorage.setItem("yemekVaryantlar", JSON.stringify(variantStore)); }catch(e){}
+    }
+    if(render) scheduleRerender({variants:true});
+  } else if(path.startsWith("menuler/")){
+    const id = path.slice(8);
+    Object.keys(menuStore).forEach(k=>{ if(monthDocId(k) === id) delete menuStore[k]; });
+    const entries = (body && body.entries) || {};
+    for(const k in entries) menuStore[k] = JSON.parse(JSON.stringify(entries[k]));
+    try{ localStorage.setItem("yemekMenuStore", JSON.stringify(menuStore)); }catch(e){}
+    if(render) scheduleRerender({});
+  }
+}
+
+async function initCloud(){
+  let db = null;
+  try{
+    if(window.claude && window.claude.use){
+      const [d, dl, u] = await Promise.all([window.claude.use("db"), window.claude.use("downloads"), window.claude.use("user")]);
+      db = d; downloadsApi = dl;
+      if(u){
+        try{ const w = await u.can("data.write"); if(w === false) cloudReadOnly = true; }catch(e){}
+      }
+    }
+  }catch(e){ db = null; }
+  if(!db){ setSync("warn", "⚠️ Bulut kullanılamıyor; veriler yalnızca bu cihazda tutuluyor."); return; }
+  cloudDb = db;
+  let first;
+  try{
+    first = await Promise.all([db.doc("app/liste").get(), db.doc("app/ayarlar").get(), db.collection("menuler").get()]);
+  }catch(e){
+    try{
+      await new Promise(r=>setTimeout(r, 800 + Math.random()*700));
+      first = await Promise.all([db.doc("app/liste").get(), db.doc("app/ayarlar").get(), db.collection("menuler").get()]);
+    }catch(e2){ setSync("warn", "⚠️ Buluta bağlanılamadı; veriler yalnızca bu cihazda tutuluyor."); cloudDb = null; return; }
+  }
+  const [liste, ayarlar, menus] = first;
+  if(liste.exists) applyRemote("app/liste", liste.data(), false);
+  if(ayarlar.exists) applyRemote("app/ayarlar", ayarlar.data(), false);
+  menus.docs.forEach(d=> applyRemote("menuler/" + d.id, d.data(), false));
+  cloudReady = true;
+  renderCats(); refreshVariantSelectQuiet(variantSelect.value); rebuildAll();
+  if(cloudReadOnly) markReadOnly(); else await runSync();
+
+  const onErr = e => { if(e && e.code === "revoked"){ setSync("warn", "⚠️ Bulut erişimi kapandı; sayfayı yenileyin."); } };
+  db.doc("app/liste").onSnapshot(s=>{ if(s.exists) applyRemote("app/liste", s.data(), true); }, onErr);
+  db.doc("app/ayarlar").onSnapshot(s=>{ if(s.exists) applyRemote("app/ayarlar", s.data(), true); }, onErr);
+  db.collection("menuler").onSnapshot(qs=>{
+    qs.docChanges().forEach(ch=>{ if(ch.type !== "removed") applyRemote("menuler/" + ch.doc.id, ch.doc.data(), true); });
+  }, onErr);
+}
+
+/* ================== BASLAT ================== */
+renderCats();
+refreshVariantSelect();
+rebuildAll();
+initCloud();
+</script>
+</body>
+</html>
